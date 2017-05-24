@@ -40,19 +40,6 @@ def get_columns(fname, nheader):
   print rows[0] #columns    
 
 
-def get_xyzs(rows, ids):
-  xyzs = {}
-  for id in ids: 
-    xyzs[id] = []
-  for row in rows: 
-    if len(row[7]) == 0:
-      continue
-    id_str = row[7][-4:]   
-    id = int(id_str)
-    if id in ids:
-      xyzs[id].append([float(row[0]), float(row[1]), float(row[2])]) 
-  return xyzs 
-
 def get_val_time(rows, ids):
   val_time = {}
   for id in ids: 
@@ -65,15 +52,6 @@ def get_val_time(rows, ids):
     if id in ids:
       val_time[id].append([float(row[0]), int(row[4])])
   return val_time    
-
-def get_volume(rows, name):
-  vol_time = {}
-  vol_time[name] = []
-  for row in rows:
-    vol_id = row[0]
-    if vol_id == 'Volume':
-      vol_time[name].append([float(row[3]), float(row[12])])
-  return vol_time    
 
 def get_norm_const(timeseries):  #First value in timeseries
     norm_const = 0
@@ -129,14 +107,6 @@ def normalize_max_bax(val_time):
     norm_const_max = get_max_bax(timeseries)
     val_time[id] = [[entry[0] / norm_const_max, entry[1]] for entry in timeseries]
 
-
-def distance_from_center(xyzs, center): 
-  dists = {}
-  for id, xyz in xyzs.items():
-      point = xyz[0]
-      dists[id] = distance.euclidean(point, center)
-  return dists
-
 def sigmoid(x, x0, k, y0, a, b):
   y = a / (b + np.exp(-k*(x-x0))) + y0
   return y
@@ -160,38 +130,6 @@ def gaussian(x, a, b, c):
 def gauss_norm(x, a, b, c):
   y = (a / (c*np.sqrt(2*np.pi))) * np.exp(-(((x-b)**2) / (2 * c**2)))
 
-def exp_decay():
-  
-  return y  
-
-def head_slope_tail(xs, ys):
-  std = np.std(ys)
-  #print "ys", ys
-  #print "std", std, type(std)
-  head_end = None
-  tail_start = None
-  i = 0
-  while head_end is None and tail_start is None and i < (len(ys) - 1):
-    head_end_condition = abs(ys[i +1] - ys[i]) > 3 * std
-    if head_end is None and head_end_condition: 
-        head_end = i
-    tail_start_condition = abs(ys[i + 1] - ys[i]) < 3 * std
-    if head_end is not None and tail_start is None and tail_start_condition: 
-        tail_start = i    
-    i += 1
-  head = ys[:head_end] if head_end is not None else None
-  slope = ys[head_end:tail_start] if head_end is not None and tail_start is not None else None
-  tail = ys[tail_start:] if tail_start is not None else None  
-  return head, slope, tail
-#Function creating a list of x and y values    
-def get_xy(timeseries):
-  x = []
-  y = []
-  for entry in timeseries:
-      x.append(entry[1])
-      y.append(entry[0])
-  return x, y
-
 def get_sigmoid_fit(x, y, verbose=False):
   p0 = [35, 0.1, 1.0, 5.0, 1.0]
   popt, pcov = curve_fit(sigmoid, x, y, p0)
@@ -206,16 +144,6 @@ def get_fit(x, y, p0, function):
   xfit = np.linspace(x[0], x[-1], 500)
   yfit = function(xfit, *popt)
   return xfit, yfit, popt, pcov   
-
-def retro_fit(data, id):
-  rx, ry = get_xy(data)
-  try: 
-    p0 = [0.5, 5, 100]
-    xfit, yfit, popt, pcov = get_fit(rx, ry, p0, gaussian)
-  except RuntimeError or RuntimeWarning:
-    xfit, yfit, popt, pcov = None, None, None, None
-    print "no Fit"
-  return xfit, yfit, popt, pcov
 
 def bax_fit(data, id):
   bx, by = get_xy(data)
@@ -290,23 +218,6 @@ def cytc_fit(data, id):
       cxfit, cyfit, cpopt = None, None, None
   return cxfit, cyfit, cpopt
 
-
-
-def get_xy_dist_rate(data, xyzs, center):
-  ks = {}
-  for id, timeseries in data.items():
-    x, y = get_xy(timeseries)
-    try:
-      _, _, popt = get_fit(x, y, verbose=True)
-      ks[id] = popt[1]
-    except RuntimeError:
-      continue
-  dists = distance_from_center(xyzs, center)
-  x, y = []
-  for id, _ in ks.items():
-    x.append(dists[id])
-    y.append(ks[id])
-  return x, y
 
 def get_lagtime(rows, names):
   #fname = "../bax_agg/Image Acquisition Times.csv"
