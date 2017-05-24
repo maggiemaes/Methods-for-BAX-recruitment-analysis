@@ -15,7 +15,7 @@ import pandas as pd
 
 
 def bax_oligo_fit(): 
-    prefix="../bax_agg/"
+    prefix="./data/"
     suffix=".csv"
       
     data_files = data.bax_oligo_data #Import data files from data.py
